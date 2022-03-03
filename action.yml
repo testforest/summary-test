@@ -1,0 +1,12 @@
+name: 'Testy'
+description: 'Display test results in a GitHub Actions workflow'
+author: 'Edward Thomson'
+inputs:
+  paths:
+    description: Path(s) to test output file(s)
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
+branding:
+  icon: check-square
+  color: blue

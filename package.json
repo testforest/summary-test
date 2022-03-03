@@ -1,0 +1,41 @@
+{
+  "name": "testy",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Display test results in a GitHub Actions workflow",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write **/*.ts",
+    "lint": "eslint src/**/*.ts",
+    "pack": "ncc build",
+    "test": "jest --passWithNoTests",
+    "all": "npm run build && npm run lint && npm run pack && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ethomson/testy.git"
+  },
+  "keywords": [
+    "actions",
+    "test",
+    "tap",
+    "ci/cd"
+  ],
+  "author": "Edward Thomson",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.21",
+    "@vercel/ncc": "^0.33.3",
+    "eslint": "^8.10.0",
+    "eslint-plugin-github": "^4.3.5",
+    "eslint-plugin-jest": "^26.1.1",
+    "jest": "^27.5.1",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.1.3",
+    "typescript": "^4.6.2"
+  }
+}

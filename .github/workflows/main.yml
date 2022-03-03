@@ -19,7 +19,15 @@ jobs:
       - name: Build
         run: |
           npm install
-          npm run all
+          npm run build
+          npm run lint
+          npm run test
+      - name: Package
+        run: |
+          npm run pack
+          cp action.yml dist/
+          cp README.md dist/
+          cp LICENSE dist/
       - name: Test
         uses: ./dist/index.js
         with:

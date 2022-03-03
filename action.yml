@@ -6,7 +6,7 @@ inputs:
     description: Path(s) to test output file(s)
 runs:
   using: 'node12'
-  main: 'dist/index.js'
+  main: 'index.js'
 branding:
   icon: check-square
   color: blue

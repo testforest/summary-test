@@ -18,4 +18,4 @@ jobs:
       - name: Test
         uses: ./dist/index.js
         with:
-          paths: "foo" "bar" "one two three"
+          paths: foo bar

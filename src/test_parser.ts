@@ -60,7 +60,9 @@ export async function parseTap(filename: string): Promise<TestResult> {
     const suites: TestSuite[] = [ ]
     let exception: string | undefined = undefined
 
-    const cases = [ ]
+    let cases = [ ]
+    let suitename: string | undefined = undefined
+
     const counts = {
         passed: 0,
         failed: 0,
@@ -76,8 +78,29 @@ export async function parseTap(filename: string): Promise<TestResult> {
         let description: string | undefined = undefined
         let details: string | undefined = undefined
 
-        if (line.match(/^\s*#/)) {
-            /* comment; ignored */
+        if (found = line.match(/^\s*#(.*)/)) {
+            if (!found[1]) {
+                continue
+            }
+
+            /* a comment starts a new suite */
+            if (cases.length > 0) {
+                suites.push({
+                    name: suitename,
+                    cases: cases
+                })
+
+                suitename = undefined
+                cases = [ ]
+            }
+
+            console.log(`-----------------------`)
+            console.log(found[1])
+
+            if (suitename)
+                suitename += " " + found[1].trim()
+            else
+                suitename = found[1].trim()
             continue
         } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*([^#]*?)\s*#\s*[Ss][Kk][Ii][Pp]\S*(?:\s+(.*?)\s*)?$/)) {
             console.log("SKIPPPP: " + line)
@@ -185,6 +208,7 @@ export async function parseTap(filename: string): Promise<TestResult> {
     }
 
     suites.push({
+        name: suitename,
         cases: cases
     })
 

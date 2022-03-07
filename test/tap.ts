@@ -14,6 +14,7 @@ describe("tap", async () => {
         expect(result.counts.skipped).to.eql(0)
 
         expect(result.suites.length).to.eql(1)
+        expect(result.suites[0].name).to.eql("Create a new Board and Tile, then place the Tile onto the board.")
         expect(result.suites[0].cases.length).to.eql(6)
     })
 
@@ -24,31 +25,36 @@ describe("tap", async () => {
         expect(result.counts.failed).to.eql(2)
         expect(result.counts.skipped).to.eql(0)
 
-        expect(result.suites.length).to.eql(1)
-        expect(result.suites[0].cases.length).to.eql(7)
+        expect(result.suites.length).to.eql(2)
+
+        expect(result.suites[0].name).to.be.a('undefined')
+        expect(result.suites[0].cases.length).to.eql(1)
 
         expect(result.suites[0].cases[0].status).to.eql(TestStatus.Pass)
         expect(result.suites[0].cases[0].name).to.eql("retrieving servers from the database")
 
-        expect(result.suites[0].cases[1].status).to.eql(TestStatus.Pass)
-        expect(result.suites[0].cases[1].name).to.eql("pinged diamond")
+        expect(result.suites[1].name).to.eql('need to ping 6 servers')
+        expect(result.suites[1].cases.length).to.eql(6)
 
-        expect(result.suites[0].cases[2].status).to.eql(TestStatus.Pass)
-        expect(result.suites[0].cases[2].name).to.eql("pinged ruby")
+        expect(result.suites[1].cases[0].status).to.eql(TestStatus.Pass)
+        expect(result.suites[1].cases[0].name).to.eql("pinged diamond")
 
-        expect(result.suites[0].cases[3].status).to.eql(TestStatus.Fail)
-        expect(result.suites[0].cases[3].name).to.eql("pinged saphire")
-        expect(result.suites[0].cases[3].details!.substring(0, 37)).to.eql(`message: 'hostname "saphire" unknown'`)
+        expect(result.suites[1].cases[1].status).to.eql(TestStatus.Pass)
+        expect(result.suites[1].cases[1].name).to.eql("pinged ruby")
 
-        expect(result.suites[0].cases[4].status).to.eql(TestStatus.Pass)
-        expect(result.suites[0].cases[4].name).to.eql("pinged onyx")
+        expect(result.suites[1].cases[2].status).to.eql(TestStatus.Fail)
+        expect(result.suites[1].cases[2].name).to.eql("pinged saphire")
+        expect(result.suites[1].cases[2].details!.substring(0, 37)).to.eql(`message: 'hostname "saphire" unknown'`)
 
-        expect(result.suites[0].cases[5].status).to.eql(TestStatus.Fail)
-        expect(result.suites[0].cases[5].name).to.eql("pinged quartz")
-        expect(result.suites[0].cases[5].details!.substring(0, 35)).to.eql(`message: 'timeout'\nseverity: fail`)
+        expect(result.suites[1].cases[3].status).to.eql(TestStatus.Pass)
+        expect(result.suites[1].cases[3].name).to.eql("pinged onyx")
 
-        expect(result.suites[0].cases[6].status).to.eql(TestStatus.Pass)
-        expect(result.suites[0].cases[6].name).to.eql("pinged gold")
+        expect(result.suites[1].cases[4].status).to.eql(TestStatus.Fail)
+        expect(result.suites[1].cases[4].name).to.eql("pinged quartz")
+        expect(result.suites[1].cases[4].details!.substring(0, 35)).to.eql(`message: 'timeout'\nseverity: fail`)
+
+        expect(result.suites[1].cases[5].status).to.eql(TestStatus.Pass)
+        expect(result.suites[1].cases[5].name).to.eql("pinged gold")
     })
 
     it("can bail out", async () => {
@@ -68,24 +74,29 @@ describe("tap", async () => {
         expect(result.counts.failed).to.eql(0)
         expect(result.counts.skipped).to.eql(4)
 
-        expect(result.suites.length).to.eql(1)
-        expect(result.suites[0].cases.length).to.eql(5)
+        expect(result.suites.length).to.eql(2)
+
+        expect(result.suites[0].name).to.be.a('undefined')
+        expect(result.suites[0].cases.length).to.eql(1)
 
         expect(result.suites[0].cases[0].status).to.eql(TestStatus.Pass)
         expect(result.suites[0].cases[0].name).to.eql("approved operating system")
 
-        expect(result.suites[0].cases[1].status).to.eql(TestStatus.Skip)
-        expect(result.suites[0].cases[1].name).to.be.a('undefined')
-        expect(result.suites[0].cases[1].description).to.eql("no /sys directory")
+        expect(result.suites[1].name).to.eql('$^0 is solaris')
+        expect(result.suites[1].cases.length).to.eql(4)
 
-        expect(result.suites[0].cases[2].status).to.eql(TestStatus.Skip)
-        expect(result.suites[0].cases[2].description).to.eql("no /sys directory")
+        expect(result.suites[1].cases[0].status).to.eql(TestStatus.Skip)
+        expect(result.suites[1].cases[0].name).to.be.a('undefined')
+        expect(result.suites[1].cases[0].description).to.eql("no /sys directory")
 
-        expect(result.suites[0].cases[3].status).to.eql(TestStatus.Skip)
-        expect(result.suites[0].cases[3].description).to.eql("no /sys directory")
+        expect(result.suites[1].cases[1].status).to.eql(TestStatus.Skip)
+        expect(result.suites[1].cases[1].description).to.eql("no /sys directory")
 
-        expect(result.suites[0].cases[4].status).to.eql(TestStatus.Skip)
-        expect(result.suites[0].cases[4].description).to.eql("no /sys directory")
+        expect(result.suites[1].cases[2].status).to.eql(TestStatus.Skip)
+        expect(result.suites[1].cases[2].description).to.eql("no /sys directory")
+
+        expect(result.suites[1].cases[3].status).to.eql(TestStatus.Skip)
+        expect(result.suites[1].cases[3].description).to.eql("no /sys directory")
     })
 
     it("can skip an entire file", async () => {

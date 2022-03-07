@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import * as core from "@actions/core"
 
 enum TestStatus {
   Pass,
@@ -10,11 +9,11 @@ enum TestStatus {
 interface TestResult {
   status: TestStatus
   description: string
-  details: string
+  details?: string
 }
 
-async function parseTap(filename: string) {
-  console.log("hello")
+export async function parseTap(filename: string) {
+  const results = [ ]
 
   const data = fs.readFileSync(filename, "utf8")
   const lines = data.split(/\r?\n/)
@@ -80,30 +79,10 @@ async function parseTap(filename: string) {
     console.log(status)
     console.log(description)
     console.log( " --")
+
+    results.push({
+        status: status,
+        description: description
+    })
   }
 }
-
-async function run(): Promise<void> {
-  try {
-    const paths = core.getInput("paths")
-
-    core.info(paths)
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/02-unknown-amount-and-failure.tap")
-    console.log('--------------')
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/04-skipped.tap")
-    console.log('--------------')
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/06-creative-liberties.tap")
-    console.log('--------------')
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/07-everything.tap")
-  } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(error.message)
-    } else if (error !== null && error !== undefined) {
-      core.setFailed(error as string)
-    } else {
-      core.setFailed("unknown error")
-    }
-  }
-}
-
-run()

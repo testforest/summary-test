@@ -18,6 +18,9 @@ interface TestCounts {
 interface TestResult {
     counts: TestCounts
     suites: TestSuite[]
+
+    /** If the test runner itself fails, it will set an exception. */
+    exception?: string
 }
 
 interface TestSuite {
@@ -29,7 +32,7 @@ interface TestSuite {
 
 interface TestCase {
     status: TestStatus
-    name: string
+    name?: string
     description?: string
     details?: string
     duration?: string
@@ -37,19 +40,25 @@ interface TestCase {
 
 export async function parseTap(filename: string): Promise<TestResult> {
     const data = fs.readFileSync(filename, "utf8")
-    const lines = data.split(/\r?\n/)
+    const lines = data.trim().split(/\r?\n/)
     let version = 12
+    let header = 0
 
-    if (lines.length > 0 && lines[0].match(/^TAP version 13$/)) {
+    if (lines.length > 0 && lines[header].match(/^TAP version 13$/)) {
         version = 13
-        lines.shift()
+        header++
+    }
+
+    if (lines.length > 0 && lines[header].match(/^1\.\./)) {
+        // TODO: capture the plan for validation
+        header++
     }
 
     let testMax = 0
     let num = 0
 
     const suites: TestSuite[] = [ ]
-    let currentSuite: TestSuite
+    let exception: string | undefined = undefined
 
     const cases = [ ]
     const counts = {
@@ -58,53 +67,71 @@ export async function parseTap(filename: string): Promise<TestResult> {
         skipped: 0
     }
 
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = header; i < lines.length; i++) {
         const line = lines[i]
 
         let found
         let status = TestStatus.Skip
-        let description = ""
+        let name: string | undefined = undefined
+        let description: string | undefined = undefined
+        let details: string | undefined = undefined
 
         if (line.match(/^\s*#/)) {
             /* comment; ignored */
-        } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*#\s*[Ss][Kk][Ii][Pp]\S*(?:\s+(.*))?/)) {
+            continue
+        } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*([^#]*?)\s*#\s*[Ss][Kk][Ii][Pp]\S*(?:\s+(.*?)\s*)?$/)) {
             console.log("SKIPPPP: " + line)
             console.log(found)
 
             num = parseInt(found[1])
             status = TestStatus.Skip
-            description = found[2]
+            name = (found[2] && found[2].length > 0) ? found[2] : undefined
+            description = found[3]
 
             counts.skipped++
-        } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*(.*)?/)) {
+        } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*(?:(.*?)\s*)?$/)) {
             console.log("OK! " + line)
             console.log(found)
 
             num = parseInt(found[1])
             status = TestStatus.Pass
-            description = found[2]
+            name = found[2]
 
             counts.passed++
-        } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*#\s*[Tt][Oo][Dd][Oo](?:\s+(.*))?/)) {
+        } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*([^#]*?)\s*#\s*[Tt][Oo][Dd][Oo](?:\s+(.*?)\s*)?$/)) {
             console.log("TODO " + line)
             console.log(found)
 
             num = parseInt(found[1])
             status = TestStatus.Skip
-            description = found[2]
+            name = (found[2] && found[2].length > 0) ? found[2] : undefined
+            description = found[3]
 
-            counts.passed++
-        } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*-?\s*(.*)?/)) {
+            counts.skipped++
+        } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*-?\s*(?:(.*?)\s*)?$/)) {
             console.log("NOT OK! " + line)
             console.log(found)
 
             num = parseInt(found[1])
             status = TestStatus.Fail
-            description = found[2]
+            name = found[2]
 
             counts.failed++
+        } else if (line.match(/^Bail out\!/)) {
+            let message = (line.match(/^Bail out\!(.*)/));
+            
+            if (message) {
+                exception = message[1].trim()
+            }
+
+            break
+        } else if (line.match(/^$/)) {
+            continue
+        } else if (line.match(/^1\.\.\d+/) && i == lines.length - 1) {
+            // TODO: capture the plan for validation
+            continue
         } else {
-            console.log("??????? " + line)
+            throw new Error(`unknown TAP line ${i + 1}: '${line}'`)
             continue
         }
 
@@ -114,21 +141,57 @@ export async function parseTap(filename: string): Promise<TestResult> {
             testMax = num
         }
 
-        console.log(line);
-        console.log(num)
-        console.log(status)
-        console.log(description)
+        console.log(`line: ${line}`);
+        console.log(`num: ${num}`)
+        console.log(`status: ${status}`)
+        console.log(`name: '${name}'`)
+        console.log(`description: ${description}`)
+        console.log(`details: ${details}`)
         console.log( " --")
+
+        if ((i + 1) < lines.length && lines[i + 1].match(/^  ---$/)) {
+            i++
+
+            console.log(`==================================`)
+            console.log(`${lines[i]}`)
+            while (i < lines.length && !lines[i + 1].match(/^  ...$/)) {
+                let detail = (lines[i + 1].match(/^  (.*)/));
+
+                if (!detail) {
+                    throw new Error("invalid yaml in test case details")
+                }
+
+                if (details)
+                    details += "\n" + detail[1]
+                else
+                    details = detail[1]
+
+                i++
+            }
+
+            if (i >= lines.length) {
+                throw new Error("truncated yaml in test case details")
+            }
+
+            i++
+        }
 
         cases.push({
             status: status,
-            description: description
+            name: name,
+            description: description,
+            details: details
         })
     }
 
+    suites.push({
+        cases: cases
+    })
+
     return {
         counts: counts,
-        suites: suites
+        suites: suites,
+        exception: exception
     }
 }
 

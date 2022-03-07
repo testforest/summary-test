@@ -1,6 +1,6 @@
 import { parseTap } from "../src/test_parser"
 
-const resourcePath = "/Users/ethomson/Projects/test-summary/action/test/resources"
+const resourcePath = `${__dirname}/resources/tap`
 
 describe("tap", async () => {
     it("parses common", async () => {

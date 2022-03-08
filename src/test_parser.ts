@@ -9,13 +9,13 @@ export enum TestStatus {
     Skip
 }
 
-interface TestCounts {
+export interface TestCounts {
     passed: number
     failed: number
     skipped: number
 }
 
-interface TestResult {
+export interface TestResult {
     counts: TestCounts
     suites: TestSuite[]
 
@@ -23,14 +23,14 @@ interface TestResult {
     exception?: string
 }
 
-interface TestSuite {
+export interface TestSuite {
     name?: string
     timestamp?: string
     filename?: string
     cases: TestCase[]
 }
 
-interface TestCase {
+export interface TestCase {
     status: TestStatus
     name?: string
     description?: string
@@ -38,8 +38,7 @@ interface TestCase {
     duration?: string
 }
 
-export async function parseTap(filename: string): Promise<TestResult> {
-    const data = fs.readFileSync(filename, "utf8")
+export async function parseTap(data: string): Promise<TestResult> {
     const lines = data.trim().split(/\r?\n/)
     let version = 12
     let header = 0
@@ -94,18 +93,12 @@ export async function parseTap(filename: string): Promise<TestResult> {
                 cases = [ ]
             }
 
-            console.log(`-----------------------`)
-            console.log(found[1])
-
             if (suitename)
                 suitename += " " + found[1].trim()
             else
                 suitename = found[1].trim()
             continue
         } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*([^#]*?)\s*#\s*[Ss][Kk][Ii][Pp]\S*(?:\s+(.*?)\s*)?$/)) {
-            console.log("SKIPPPP: " + line)
-            console.log(found)
-
             num = parseInt(found[1])
             status = TestStatus.Skip
             name = (found[2] && found[2].length > 0) ? found[2] : undefined
@@ -113,18 +106,12 @@ export async function parseTap(filename: string): Promise<TestResult> {
 
             counts.skipped++
         } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*(?:(.*?)\s*)?$/)) {
-            console.log("OK! " + line)
-            console.log(found)
-
             num = parseInt(found[1])
             status = TestStatus.Pass
             name = found[2]
 
             counts.passed++
         } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*([^#]*?)\s*#\s*[Tt][Oo][Dd][Oo](?:\s+(.*?)\s*)?$/)) {
-            console.log("TODO " + line)
-            console.log(found)
-
             num = parseInt(found[1])
             status = TestStatus.Skip
             name = (found[2] && found[2].length > 0) ? found[2] : undefined
@@ -132,9 +119,6 @@ export async function parseTap(filename: string): Promise<TestResult> {
 
             counts.skipped++
         } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*-?\s*(?:(.*?)\s*)?$/)) {
-            console.log("NOT OK! " + line)
-            console.log(found)
-
             num = parseInt(found[1])
             status = TestStatus.Fail
             name = found[2]
@@ -164,19 +148,9 @@ export async function parseTap(filename: string): Promise<TestResult> {
             testMax = num
         }
 
-        console.log(`line: ${line}`);
-        console.log(`num: ${num}`)
-        console.log(`status: ${status}`)
-        console.log(`name: '${name}'`)
-        console.log(`description: ${description}`)
-        console.log(`details: ${details}`)
-        console.log( " --")
-
         if ((i + 1) < lines.length && lines[i + 1].match(/^  ---$/)) {
             i++
 
-            console.log(`==================================`)
-            console.log(`${lines[i]}`)
             while (i < lines.length && !lines[i + 1].match(/^  ...$/)) {
                 let detail = (lines[i + 1].match(/^  (.*)/));
 
@@ -219,9 +193,7 @@ export async function parseTap(filename: string): Promise<TestResult> {
     }
 }
 
-export async function parseXml(filename: string): Promise<TestResult> {
-    const data = fs.readFileSync(filename, "utf8")
-
+export async function parseXml(data: string): Promise<TestResult> {
     const parser = util.promisify(xml2js.parseString)
     const xml: any = await parser(data)
 
@@ -291,4 +263,32 @@ export async function parseXml(filename: string): Promise<TestResult> {
         counts: counts,
         suites: suites
     }
+}
+
+export async function parseTapFile(filename: string): Promise<TestResult> {
+    const readfile = util.promisify(fs.readFile);
+    return parseTap(await readfile(filename, "utf8"))
+}
+
+export async function parseXmlFile(filename: string): Promise<TestResult> {
+    const readfile = util.promisify(fs.readFile);
+    return parseXml(await readfile(filename, "utf8"))
+}
+
+export async function parseFile(filename: string): Promise<TestResult> {
+    const readfile = util.promisify(fs.readFile);
+    const data = await readfile(filename, "utf8")
+
+    if (data.match(/^TAP version 13\r?\n/) ||
+        data.match(/^ok /) ||
+        data.match(/^not ok /)) {
+        return parseTap(data)
+    }
+
+    if (data.match(/^<\?xml[^>]+>\s*<testsuites[^>]+>/) ||
+        data.match(/^<testsuites[^>]+>/)) {
+        return parseXml(data)
+    }
+
+    throw new Error(`unknown test file type for '${filename}'`)
 }

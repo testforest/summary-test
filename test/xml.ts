@@ -1,13 +1,13 @@
 import * as chai from "chai"
 import { expect } from "chai"
 
-import { TestStatus, parseXml } from "../src/test_parser"
+import { TestStatus, parseXmlFile } from "../src/test_parser"
 
 const resourcePath = `${__dirname}/resources/xml`
 
 describe("xml", async () => {
     it("parses common", async () => {
-        const result = await parseXml(`${resourcePath}/01-common.xml`)
+        const result = await parseXmlFile(`${resourcePath}/01-common.xml`)
 
         expect(result.counts.passed).to.eql(7)
         expect(result.counts.failed).to.eql(1)
@@ -19,7 +19,7 @@ describe("xml", async () => {
     })
 
     it("parses example", async () => {
-        const result = await parseXml(`${resourcePath}/02-example.xml`)
+        const result = await parseXmlFile(`${resourcePath}/02-example.xml`)
 
         expect(result.counts.passed).to.eql(21)
         expect(result.counts.failed).to.eql(9)

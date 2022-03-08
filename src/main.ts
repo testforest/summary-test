@@ -1,100 +1,41 @@
 import * as fs from "fs";
 import * as core from "@actions/core"
 
-enum TestStatus {
-  Pass,
-  Fail,
-  Skip
-}
+import { TestStatus, TestCounts, TestResult, TestSuite, TestCase, parseFile } from "./test_parser"
 
-interface TestResult {
-  status: TestStatus
-  description: string
-  details: string
-}
-
-async function parseTap(filename: string) {
-  console.log("hello")
-
-  const data = fs.readFileSync(filename, "utf8")
-  const lines = data.split(/\r?\n/)
-  let version = 12
-
-  if (lines.length > 0 && lines[0].match(/^TAP version 13$/)) {
-    version = 13
-    lines.shift()
-  }
-
-  let testMax = 0
-
-  let num = 0
-  let status: TestStatus = TestStatus.Skip
-  let description: string = ""
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    let found
-
-    if (line.match(/^\s*#/)) {
-      /* comment; ignored */
-    } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*#\s*[Ss][Kk][Ii][Pp]\S*(?:\s+(.*))?/)) {
-      console.log("SKIPPPP: " + line)
-      console.log(found)
-
-      num = parseInt(found[1])
-      status = TestStatus.Skip
-      description = found[2]
-    } else if (found = line.match(/^ok(?:\s+(\d+))?\s*-?\s*(.*)?/)) {
-      console.log("OK! " + line)
-      console.log(found)
-
-      num = parseInt(found[1])
-      status = TestStatus.Pass
-      description = found[2]
-    } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*#\s*[Tt][Oo][Dd][Oo](?:\s+(.*))?/)) {
-      console.log("TODO " + line)
-      console.log(found)
-
-      num = parseInt(found[1])
-      status = TestStatus.Skip
-      description = found[2]
-    } else if (found = line.match(/^not ok(?:\s+(\d+))?\s*-?\s*-?\s*(.*)?/)) {
-      console.log("NOT OK! " + line)
-      console.log(found)
-
-      num = parseInt(found[1])
-      status = TestStatus.Fail
-      description = found[2]
-    } else {
-      console.log("??????? " + line)
-    }
-
-    if (isNaN(num)) {
-      num = ++testMax
-    } else if (num > testMax) {
-      testMax = num
-    }
-
-    console.log(line);
-    console.log(num)
-    console.log(status)
-    console.log(description)
-    console.log( " --")
-  }
-}
+const dashboardUrl = 'http://svg.test-summary.com/dashboard.svg'
+const passIconUrl = 'https://icongr.am/octicons/check-circle-fill.svg?size=14&color=2da44e'
+const failIconUrl = 'https://icongr.am/octicons/x-circle-fill.svg?size=14&color=cf222e'
+const skipIconUrl = 'https://icongr.am/octicons/skip.svg?size=16&color=6e7781'
 
 async function run(): Promise<void> {
   try {
-    const paths = core.getInput("paths")
+    //const paths = core.getInput("paths")
 
-    core.info(paths)
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/02-unknown-amount-and-failure.tap")
-    console.log('--------------')
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/04-skipped.tap")
-    console.log('--------------')
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/06-creative-liberties.tap")
-    console.log('--------------')
-    parseTap("/Users/ethomson/Projects/testy/tests/resources/07-everything.tap")
+    const paths = [ 
+        "/Users/ethomson/Projects/test-summary/action/test/resources/tap/02-unknown-amount-and-failure.tap",
+        "/Users/ethomson/Projects/test-summary/action/test/resources/tap/04-skipped.tap",
+        "/Users/ethomson/Projects/test-summary/action/test/resources/xml/02-example.xml"
+    ]
+
+    let results = [ ]
+    let total = { passed: 0, failed: 0, skipped: 0 }
+
+    for (const path of paths) {
+        const result = await parseFile(path)
+
+        total.passed += result.counts.passed
+        total.failed += result.counts.failed
+        total.skipped += result.counts.skipped
+
+        results.push(result)
+    }
+
+    console.log(dashboardSummary(total))
+
+    if (total.failed > 0) {
+        console.log(dashboardResults(results, true))
+    }
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message)
@@ -104,6 +45,73 @@ async function run(): Promise<void> {
       core.setFailed("unknown error")
     }
   }
+}
+
+function dashboardSummary(count: TestCounts) {
+    let summary = ""
+
+    if (count.passed > 0) {
+        summary += `${count.passed} passed`
+    }
+    if (count.failed > 0) {
+        summary += `${summary ? ', ' : '' }${count.failed} failed`
+    }
+    if (count.skipped > 0) {
+        summary += `${summary ? ', ' : '' }${count.skipped} skipped`
+    }
+
+    return `<img src="${dashboardUrl}?p=${count.passed}&f=${count.failed}&s=${count.skipped}" alt="${summary}">`
+}
+
+function dashboardResults(results: TestResult[], onlyFailed: boolean) {
+    let table = "<table>"
+    let count = 0
+
+    table += '<tr><th align="left">Test failures:</th></tr>'
+
+    for (const result of results) {
+        for (const suite of result.suites) {
+            for (const testcase of suite.cases) {
+                if (onlyFailed && testcase.status != TestStatus.Fail) {
+                    continue
+                }
+
+                table += "<tr><td>"
+
+                if (testcase.status == TestStatus.Pass) {
+                    table += `<img src="${passIconUrl}" alt="">&nbsp; `
+                } else if (testcase.status == TestStatus.Fail) {
+                    table += `<img src="${failIconUrl}" alt="">&nbsp; `
+                } else if (testcase.status == TestStatus.Skip) {
+                    table += `<img src="${skipIconUrl}" alt="">&nbsp; `
+                }
+
+                table += testcase.name
+
+                if (testcase.description) {
+                    table += " - "
+                    table += testcase.description
+                }
+
+                if (testcase.details) {
+                    table += "<br/><pre><code>"
+                    table += testcase.details
+                    table += "</code></pre>"
+                }
+
+                table += "</td></tr>\n"
+
+                count++
+            }
+        }
+    }
+
+    table += "</table>"
+
+    if (count == 0)
+        return ""
+
+    return table
 }
 
 run()

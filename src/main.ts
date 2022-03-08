@@ -18,23 +18,26 @@ async function run(): Promise<void> {
         "/Users/ethomson/Projects/test-summary/action/test/resources/xml/02-example.xml"
     ]
 
-    let results = [ ]
-    let total = { passed: 0, failed: 0, skipped: 0 }
+    let total: TestResult = {
+        counts: { passed: 0, failed: 0, skipped: 0 },
+        suites: [ ],
+        exception: undefined
+    }
 
     for (const path of paths) {
         const result = await parseFile(path)
 
-        total.passed += result.counts.passed
-        total.failed += result.counts.failed
-        total.skipped += result.counts.skipped
+        total.counts.passed += result.counts.passed
+        total.counts.failed += result.counts.failed
+        total.counts.skipped += result.counts.skipped
 
-        results.push(result)
+        total.suites.push(...result.suites)
     }
 
     console.log(dashboardSummary(total))
 
-    if (total.failed > 0) {
-        console.log(dashboardResults(results, true))
+    if (total.counts.failed > 0) {
+        console.log(dashboardResults(total, true))
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -47,7 +50,8 @@ async function run(): Promise<void> {
   }
 }
 
-function dashboardSummary(count: TestCounts) {
+function dashboardSummary(result: TestResult) {
+    const count = result.counts
     let summary = ""
 
     if (count.passed > 0) {
@@ -63,46 +67,44 @@ function dashboardSummary(count: TestCounts) {
     return `<img src="${dashboardUrl}?p=${count.passed}&f=${count.failed}&s=${count.skipped}" alt="${summary}">`
 }
 
-function dashboardResults(results: TestResult[], onlyFailed: boolean) {
+function dashboardResults(result: TestResult, onlyFailed: boolean) {
     let table = "<table>"
     let count = 0
 
     table += '<tr><th align="left">Test failures:</th></tr>'
 
-    for (const result of results) {
-        for (const suite of result.suites) {
-            for (const testcase of suite.cases) {
-                if (onlyFailed && testcase.status != TestStatus.Fail) {
-                    continue
-                }
-
-                table += "<tr><td>"
-
-                if (testcase.status == TestStatus.Pass) {
-                    table += `<img src="${passIconUrl}" alt="">&nbsp; `
-                } else if (testcase.status == TestStatus.Fail) {
-                    table += `<img src="${failIconUrl}" alt="">&nbsp; `
-                } else if (testcase.status == TestStatus.Skip) {
-                    table += `<img src="${skipIconUrl}" alt="">&nbsp; `
-                }
-
-                table += testcase.name
-
-                if (testcase.description) {
-                    table += " - "
-                    table += testcase.description
-                }
-
-                if (testcase.details) {
-                    table += "<br/><pre><code>"
-                    table += testcase.details
-                    table += "</code></pre>"
-                }
-
-                table += "</td></tr>\n"
-
-                count++
+    for (const suite of result.suites) {
+        for (const testcase of suite.cases) {
+            if (onlyFailed && testcase.status != TestStatus.Fail) {
+                continue
             }
+
+            table += "<tr><td>"
+
+            if (testcase.status == TestStatus.Pass) {
+                table += `<img src="${passIconUrl}" alt="">&nbsp; `
+            } else if (testcase.status == TestStatus.Fail) {
+                table += `<img src="${failIconUrl}" alt="">&nbsp; `
+            } else if (testcase.status == TestStatus.Skip) {
+                table += `<img src="${skipIconUrl}" alt="">&nbsp; `
+            }
+
+            table += testcase.name
+
+            if (testcase.description) {
+                table += ": "
+                table += testcase.description
+            }
+
+            if (testcase.details) {
+                table += "<br/><pre><code>"
+                table += testcase.details
+                table += "</code></pre>"
+            }
+
+            table += "</td></tr>\n"
+
+            count++
         }
     }
 

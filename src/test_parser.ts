@@ -1,7 +1,7 @@
-import xml2js from 'xml2js';
-
 import * as fs from "fs";
 import * as util from "util";
+
+import xml2js from "xml2js";
 
 export enum TestStatus {
     Pass = (1 << 0),

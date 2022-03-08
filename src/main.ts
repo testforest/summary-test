@@ -37,7 +37,7 @@ async function run(): Promise<void> {
     console.log(dashboardSummary(total))
 
     if (total.counts.failed > 0) {
-        console.log(dashboardResults(total, true))
+        console.log(dashboardResults(total, TestStatus.Fail))
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -67,15 +67,26 @@ function dashboardSummary(result: TestResult) {
     return `<img src="${dashboardUrl}?p=${count.passed}&f=${count.failed}&s=${count.skipped}" alt="${summary}">`
 }
 
-function dashboardResults(result: TestResult, onlyFailed: boolean) {
+function dashboardResults(result: TestResult, show: number) {
     let table = "<table>"
     let count = 0
+    let title: string
 
-    table += '<tr><th align="left">Test failures:</th></tr>'
+    if (show == TestStatus.Fail) {
+        title = "Test failures"
+    } else if (show == TestStatus.Skip) {
+        title = "Skipped tests"
+    } else if (show == TestStatus.Pass) {
+        title = "Passing tests"
+    } else {
+        title = "Test results"
+    }
+
+    table += `<tr><th align="left">${title}:</th></tr>`
 
     for (const suite of result.suites) {
         for (const testcase of suite.cases) {
-            if (onlyFailed && testcase.status != TestStatus.Fail) {
+            if (show != 0 && (show & testcase.status) == 0) {
                 continue
             }
 

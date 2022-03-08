@@ -4,9 +4,9 @@ import * as fs from "fs";
 import * as util from "util";
 
 export enum TestStatus {
-    Pass,
-    Fail,
-    Skip
+    Pass = (1 << 0),
+    Fail = (1 << 1),
+    Skip = (1 << 2)
 }
 
 export interface TestCounts {

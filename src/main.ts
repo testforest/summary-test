@@ -1,22 +1,48 @@
 import * as fs from "fs";
+import * as util from "util";
 import * as core from "@actions/core"
 
 import { TestStatus, TestCounts, TestResult, TestSuite, TestCase, parseFile } from "./test_parser"
 
-const dashboardUrl = 'http://svg.test-summary.com/dashboard.svg'
-const passIconUrl = 'https://icongr.am/octicons/check-circle-fill.svg?size=14&color=2da44e'
-const failIconUrl = 'https://icongr.am/octicons/x-circle-fill.svg?size=14&color=cf222e'
-const skipIconUrl = 'https://icongr.am/octicons/skip.svg?size=16&color=6e7781'
+const dashboardUrl = 'http://svg.testforest.io/dashboard.svg'
+const passIconUrl = 'http://svg.testforest.io/icon/pass.svg?s=12'
+const failIconUrl = 'http://svg.testforest.io/icon/fail.svg?s=12'
+const skipIconUrl = 'http://svg.testforest.io/icon/skip.svg?s=12'
+const noneIconUrl = 'http://svg.testforest.io/icon/none.svg?s=12'
+
+const footer = `This test report was produced by <a href="https://github.com/testforest/action">TestForest Dashboard</a>.&nbsp; Made with ❤️ in Cambridge by TestForest.`
 
 async function run(): Promise<void> {
   try {
-    //const paths = core.getInput("paths")
+    const pathList = core.getInput("paths", { required: true })
+    const outputFile = core.getInput("output", { required: true })
+    const show = core.getInput("show")
 
+    /*
+     * Given paths may either be an individual path (eg "foo.xml"), a path
+     * glob (eg "**TEST-*.xml"), or may be newline separated (from a multi-line
+     * yaml scalar).
+     */
+    const paths = [ ]
+
+    for (let path of pathList.split(/\r?\n/)) {
+        path = path.trim()
+        paths.push(path)
+    }
+
+    console.log(paths)
+
+    throw new Error("foo")
+
+    /*
     const paths = [ 
+        "/Users/ethomson/Projects/test-summary/action/test/resources/tap/01-common.tap"
         "/Users/ethomson/Projects/test-summary/action/test/resources/tap/02-unknown-amount-and-failure.tap",
         "/Users/ethomson/Projects/test-summary/action/test/resources/tap/04-skipped.tap",
         "/Users/ethomson/Projects/test-summary/action/test/resources/xml/02-example.xml"
     ]
+        */
+
 
     let total: TestResult = {
         counts: { passed: 0, failed: 0, skipped: 0 },
@@ -34,10 +60,14 @@ async function run(): Promise<void> {
         total.suites.push(...result.suites)
     }
 
-    console.log(dashboardSummary(total))
+    let output = dashboardSummary(total)
+    output += dashboardResults(total, TestStatus.Pass)
 
-    if (total.counts.failed > 0) {
-        console.log(dashboardResults(total, TestStatus.Fail))
+    if (outputFile === "-") {
+        console.log(output)
+    } else {
+        const writefile = util.promisify(fs.writeFile);
+        await writefile(outputFile, output)
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -119,6 +149,7 @@ function dashboardResults(result: TestResult, show: number) {
         }
     }
 
+    table += `<tr><td><sub>${footer}</sub></td></tr>`
     table += "</table>"
 
     if (count == 0)

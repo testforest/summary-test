@@ -1,5 +1,5 @@
-name: 'Testy'
-description: 'Display test results in a GitHub Actions workflow'
+name: 'TestForest Dashboard'
+description: 'Display test results summary in a GitHub Actions workflow'
 author: 'Edward Thomson'
 inputs:
   paths:
@@ -8,9 +8,11 @@ inputs:
   output:
     description: File to write with rendered output
     required: true
+  show:
+    description: Types of tests to show in the results table
 runs:
   using: 'node12'
   main: 'index.js'
 branding:
   icon: check-square
-  color: blue
+  color: green

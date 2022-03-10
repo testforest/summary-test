@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as util from "util";
 import * as core from "@actions/core"
+import * as glob from "glob-promise"
 
 import { TestStatus, TestCounts, TestResult, TestSuite, TestCase, parseFile } from "./test_parser"
 
@@ -14,9 +15,9 @@ const footer = `This test report was produced by <a href="https://github.com/tes
 
 async function run(): Promise<void> {
   try {
-    const pathList = core.getInput("paths", { required: true })
+    const pathGlobs = core.getInput("paths", { required: true })
     const outputFile = core.getInput("output", { required: true })
-    const show = core.getInput("show")
+    const showList = core.getInput("show")
 
     /*
      * Given paths may either be an individual path (eg "foo.xml"), a path
@@ -25,24 +26,64 @@ async function run(): Promise<void> {
      */
     const paths = [ ]
 
-    for (let path of pathList.split(/\r?\n/)) {
-        path = path.trim()
-        paths.push(path)
+    for (let path of pathGlobs.split(/\r?\n/)) {
+        if (glob.hasMagic(path)) {
+            paths.push(...await glob.promise(path))
+        } else {
+            paths.push(path.trim())
+        }
     }
 
-    console.log(paths)
+    let show = TestStatus.Fail
+    if (showList) {
+        show = 0
 
-    throw new Error("foo")
+        for (let showName of showList.split(/,\s*/)) {
+            if (showName === "none") {
+                continue
+            } else if (showName === "all") {
+                show = TestStatus.Pass | TestStatus.Fail | TestStatus.Skip
+                continue
+            }
+
+            const showValue = (TestStatus as any)[showName.replace(/^([a-z])(.*)/, (m, p1, p2) => p1.toUpperCase() + p2)]
+
+            if (!showValue) {
+                throw new Error(`unknown test type: ${showName}`)
+            }
+
+            show |= showValue
+        }
+    }
 
     /*
-    const paths = [ 
-        "/Users/ethomson/Projects/test-summary/action/test/resources/tap/01-common.tap"
-        "/Users/ethomson/Projects/test-summary/action/test/resources/tap/02-unknown-amount-and-failure.tap",
-        "/Users/ethomson/Projects/test-summary/action/test/resources/tap/04-skipped.tap",
-        "/Users/ethomson/Projects/test-summary/action/test/resources/xml/02-example.xml"
-    ]
-        */
+     * Show the inputs for debugging
+     */
 
+    if (core.isDebug()) {
+        core.debug("Paths to analyze:")
+
+        for (let path of paths) {
+            core.debug(`: ${path}`)
+        }
+
+        core.debug(`Output file: ${outputFile === '-' ? "(stdout)" : outputFile}`)
+
+        let showInfo = "Tests to show:"
+        if (show === 0) {
+            showInfo += " none"
+        }
+        for (const showName in TestStatus) {
+            const showType = Number(showName)
+
+            if (!isNaN(showType) && (show & showType) == showType) {
+                showInfo += ` ${TestStatus[showType]}`
+            }
+        }
+        core.debug(showInfo)
+    }
+
+    /* Analyze the tests */
 
     let total: TestResult = {
         counts: { passed: 0, failed: 0, skipped: 0 },
@@ -60,8 +101,13 @@ async function run(): Promise<void> {
         total.suites.push(...result.suites)
     }
 
+    /* Create and write the output */
+
     let output = dashboardSummary(total)
-    output += dashboardResults(total, TestStatus.Pass)
+
+    if (show) {
+        output += dashboardResults(total, show)
+    }
 
     if (outputFile === "-") {
         console.log(output)

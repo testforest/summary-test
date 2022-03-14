@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Display test results in a GitHub Actions workflow",
-  "main": "lib/main.js",
+  "main": "bin/main.js",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write **/*.ts",

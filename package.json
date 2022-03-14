@@ -1,5 +1,5 @@
 {
-  "name": "testy",
+  "name": "test-summary",
   "version": "0.0.1",
   "private": true,
   "description": "Display test results in a GitHub Actions workflow",
@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ethomson/testy.git"
+    "url": "git+https://github.com/testforest/test-summary.git"
   },
   "keywords": [
     "actions",

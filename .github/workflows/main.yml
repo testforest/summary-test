@@ -33,6 +33,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    needs: build
 
     steps:
       - name: Check out source
@@ -58,9 +59,8 @@ jobs:
       - name: Check for changes
         id: status
         run: |
-          source ../.github/workflows/actions.sh
           if [ -n "$(git status --porcelain)" ]; then
-            set_output has_changes 1
+            echo "::set-output name=has_changes::1"
           fi
         working-directory: dist
       - name: Publish action

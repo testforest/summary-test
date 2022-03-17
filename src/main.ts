@@ -3,7 +3,7 @@ import * as util from "util"
 import * as core from "@actions/core"
 import * as glob from "glob-promise"
 
-import { TestStatus, TestCounts, TestResult, TestSuite, TestCase, parseFile } from "./test_parser"
+import { TestResult, TestStatus, parseFile } from "./test_parser"
 
 const dashboardUrl = 'http://svg.testforest.io/dashboard.svg'
 const passIconUrl = 'http://svg.testforest.io/icon/pass.svg?s=12'
@@ -150,9 +150,9 @@ function dashboardResults(result: TestResult, show: number) {
 
     if (show == TestStatus.Fail) {
         title = "Test failures"
-    } else if (show == TestStatus.Skip) {
+    } else if (show === TestStatus.Skip) {
         title = "Skipped tests"
-    } else if (show == TestStatus.Pass) {
+    } else if (show === TestStatus.Pass) {
         title = "Passing tests"
     } else {
         title = "Test results"

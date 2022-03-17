@@ -29,7 +29,7 @@ jobs:
       - name: Create test summary
         uses: ./dist
         with:
-          inputs: test/results/*.xml
+          paths: test/results/*.xml
           output: test/results/results.html
       - name: Upload test summary
         uses: actions/upload-artifact@v3

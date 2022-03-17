@@ -18,8 +18,11 @@
   },
   "keywords": [
     "actions",
+    "dashboard",
     "test",
+    "summary",
     "tap",
+    "junit",
     "ci/cd"
   ],
   "author": "Edward Thomson",

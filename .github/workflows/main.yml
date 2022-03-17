@@ -27,7 +27,7 @@ jobs:
           npm run build
           npm run test
       - name: Create test summary
-        uses: ./dist
+        uses: ./bin
         with:
           paths: test/results/*.xml
           output: test/results/results.html

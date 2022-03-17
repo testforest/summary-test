@@ -131,13 +131,12 @@ function parseTap(data) {
             else if (line.match(/^$/)) {
                 continue;
             }
-            else if (line.match(/^1\.\.\d+/) && i == lines.length - 1) {
+            else if (line.match(/^1\.\.\d+/) && i === lines.length - 1) {
                 // TODO: capture the plan for validation
                 continue;
             }
             else {
                 throw new Error(`unknown TAP line ${i + 1}: '${line}'`);
-                continue;
             }
             if (isNaN(num)) {
                 num = ++testMax;

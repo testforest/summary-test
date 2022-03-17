@@ -162,10 +162,10 @@ function dashboardResults(result, show) {
     if (show == test_parser_1.TestStatus.Fail) {
         title = "Test failures";
     }
-    else if (show == test_parser_1.TestStatus.Skip) {
+    else if (show === test_parser_1.TestStatus.Skip) {
         title = "Skipped tests";
     }
-    else if (show == test_parser_1.TestStatus.Pass) {
+    else if (show === test_parser_1.TestStatus.Pass) {
         title = "Passing tests";
     }
     else {

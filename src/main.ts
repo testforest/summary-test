@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as util from "util";
+import * as fs from "fs"
+import * as util from "util"
 import * as core from "@actions/core"
 import * as glob from "glob-promise"
 
@@ -26,7 +26,7 @@ async function run(): Promise<void> {
      */
     const paths = [ ]
 
-    for (let path of pathGlobs.split(/\r?\n/)) {
+    for (const path of pathGlobs.split(/\r?\n/)) {
         if (glob.hasMagic(path)) {
             paths.push(...await glob.promise(path))
         } else {
@@ -38,7 +38,7 @@ async function run(): Promise<void> {
     if (showList) {
         show = 0
 
-        for (let showName of showList.split(/,\s*/)) {
+        for (const showName of showList.split(/,\s*/)) {
             if (showName === "none") {
                 continue
             } else if (showName === "all") {
@@ -63,7 +63,7 @@ async function run(): Promise<void> {
     if (core.isDebug()) {
         core.debug("Paths to analyze:")
 
-        for (let path of paths) {
+        for (const path of paths) {
             core.debug(`: ${path}`)
         }
 
@@ -85,7 +85,7 @@ async function run(): Promise<void> {
 
     /* Analyze the tests */
 
-    let total: TestResult = {
+    const total: TestResult = {
         counts: { passed: 0, failed: 0, skipped: 0 },
         suites: [ ],
         exception: undefined
@@ -112,7 +112,7 @@ async function run(): Promise<void> {
     if (outputFile === "-") {
         console.log(output)
     } else {
-        const writefile = util.promisify(fs.writeFile);
+        const writefile = util.promisify(fs.writeFile)
         await writefile(outputFile, output)
     }
   } catch (error) {

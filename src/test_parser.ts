@@ -1,7 +1,7 @@
-import * as fs from "fs";
-import * as util from "util";
+import * as fs from "fs"
+import * as util from "util"
 
-import xml2js from "xml2js";
+import xml2js from "xml2js"
 
 export enum TestStatus {
     Pass = (1 << 0),
@@ -125,7 +125,7 @@ export async function parseTap(data: string): Promise<TestResult> {
 
             counts.failed++
         } else if (line.match(/^Bail out\!/)) {
-            let message = (line.match(/^Bail out\!(.*)/));
+            const message = (line.match(/^Bail out\!(.*)/))
             
             if (message) {
                 exception = message[1].trim()
@@ -152,7 +152,7 @@ export async function parseTap(data: string): Promise<TestResult> {
             i++
 
             while (i < lines.length && !lines[i + 1].match(/^  ...$/)) {
-                let detail = (lines[i + 1].match(/^  (.*)/));
+                const detail = (lines[i + 1].match(/^  (.*)/))
 
                 if (!detail) {
                     throw new Error("invalid yaml in test case details")
@@ -266,17 +266,17 @@ export async function parseXml(data: string): Promise<TestResult> {
 }
 
 export async function parseTapFile(filename: string): Promise<TestResult> {
-    const readfile = util.promisify(fs.readFile);
+    const readfile = util.promisify(fs.readFile)
     return parseTap(await readfile(filename, "utf8"))
 }
 
 export async function parseXmlFile(filename: string): Promise<TestResult> {
-    const readfile = util.promisify(fs.readFile);
+    const readfile = util.promisify(fs.readFile)
     return parseXml(await readfile(filename, "utf8"))
 }
 
 export async function parseFile(filename: string): Promise<TestResult> {
-    const readfile = util.promisify(fs.readFile);
+    const readfile = util.promisify(fs.readFile)
     const data = await readfile(filename, "utf8")
 
     if (data.match(/^TAP version 13\r?\n/) ||

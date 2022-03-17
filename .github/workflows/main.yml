@@ -8,27 +8,66 @@ on:
   workflow_dispatch:
 
 jobs:
+  #
+  # Build and test
+  #
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
+      - name: Check out source
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
           node-version: '12'
       - name: Build
         run: |
-          npm install
+          npm ci
           npm run build
-          npm run lint
           npm run test
-      - name: Package
+
+  #
+  # Publish the action to the `dist` branch
+  #
+  publish:
+    runs-on: ubuntu-latest
+    if: github.event_name == "push"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v3
+      - name: Check out distribution branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'dist'
+          path: 'dist'
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12'
+      - name: Build
         run: |
+          npm ci
           npm run pack
+
           cp action.yml dist/
           cp README.md dist/
           cp LICENSE dist/
-      - name: Test
-        uses: ./dist
-        with:
-          paths: foo bar
+      - name: Check for changes
+        id: status
+        run: |
+          source ../.github/workflows/actions.sh
+          if [ -n "$(git status --porcelain)" ]; then
+            set_output has_changes 1
+          fi
+        working-directory: dist
+      - name: Publish action
+        run: |
+          git add --verbose .
+          git config user.name 'Edward Thomson'
+          git config user.email 'ethomson@edwardthomson.com'
+          git commit -m 'Update from CI' --allow-empty
+          git push origin dist
+        if: steps.status.outputs.has_changes == '1'
+        working-directory: dist

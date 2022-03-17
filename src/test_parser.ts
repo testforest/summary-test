@@ -285,8 +285,8 @@ export async function parseFile(filename: string): Promise<TestResult> {
         return parseTap(data)
     }
 
-    if (data.match(/^<\?xml[^>]+>\s*<testsuites[^>]+>/) ||
-        data.match(/^<testsuites[^>]+>/)) {
+    if (data.match(/^\s*<\?xml[^>]+>\s*<testsuites[^>]*>/) ||
+        data.match(/^\s*<testsuites[^>]*>/)) {
         return parseXml(data)
     }
 

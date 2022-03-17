@@ -12,7 +12,7 @@ inputs:
     description: Types of tests to show in the results table
 runs:
   using: 'node12'
-  main: 'main.js'
+  main: 'index.js'
 branding:
   icon: check-square
   color: green

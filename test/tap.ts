@@ -1,7 +1,10 @@
 import * as chai from "chai"
+import chaiAsPromised from 'chai-as-promised'
 import { expect } from "chai"
 
 import { TestStatus, parseTapFile } from "../src/test_parser"
+
+chai.use(chaiAsPromised)
 
 const resourcePath = `${__dirname}/resources/tap`
 
@@ -251,5 +254,17 @@ describe("tap", async () => {
 
         expect(result.suites[0].cases[19].status).to.eql(TestStatus.Skip)
         expect(result.suites[0].cases[19].description).to.eql("number 20")
+    })
+
+    it("parses node-tap output", async () => {
+        const result = await parseTapFile(`${resourcePath}/09-node-tap.tap`)
+
+        expect(result.counts.passed).to.eql(4)
+        expect(result.counts.failed).to.eql(4)
+        expect(result.counts.skipped).to.eql(2)
+    })
+
+    it("rejects invalid trailer", async () => {
+        expect(parseTapFile(`${resourcePath}/10-results-after-trailer.tap`)).to.be.rejectedWith(Error)
     })
 })

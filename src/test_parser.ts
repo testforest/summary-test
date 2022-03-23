@@ -42,6 +42,7 @@ export async function parseTap(data: string): Promise<TestResult> {
     const lines = data.trim().split(/\r?\n/)
     let version = 12
     let header = 0
+    let trailer = false
 
     if (lines.length > 0 && lines[header].match(/^TAP version 13$/)) {
         version = 13
@@ -134,8 +135,9 @@ export async function parseTap(data: string): Promise<TestResult> {
             break
         } else if (line.match(/^$/)) {
             continue
-        } else if (line.match(/^1\.\.\d+/) && i === lines.length - 1) {
+        } else if (line.match(/^1\.\.\d+/)) {
             // TODO: capture the plan for validation
+            trailer = true
             continue
         } else {
             throw new Error(`unknown TAP line ${i + 1}: '${line}'`)
@@ -150,7 +152,7 @@ export async function parseTap(data: string): Promise<TestResult> {
         if ((i + 1) < lines.length && lines[i + 1].match(/^  ---$/)) {
             i++
 
-            while (i < lines.length && !lines[i + 1].match(/^  ...$/)) {
+            while (i < lines.length && !lines[i + 1].match(/^  \.\.\.$/)) {
                 const detail = (lines[i + 1].match(/^  (.*)/))
 
                 if (!detail) {
@@ -170,6 +172,10 @@ export async function parseTap(data: string): Promise<TestResult> {
             }
 
             i++
+        }
+
+        if (trailer) {
+            throw new Error("unexpected test results after trailer")
         }
 
         cases.push({
@@ -266,12 +272,12 @@ export async function parseXml(data: string): Promise<TestResult> {
 
 export async function parseTapFile(filename: string): Promise<TestResult> {
     const readfile = util.promisify(fs.readFile)
-    return parseTap(await readfile(filename, "utf8"))
+    return await parseTap(await readfile(filename, "utf8"))
 }
 
 export async function parseXmlFile(filename: string): Promise<TestResult> {
     const readfile = util.promisify(fs.readFile)
-    return parseXml(await readfile(filename, "utf8"))
+    return await parseXml(await readfile(filename, "utf8"))
 }
 
 export async function parseFile(filename: string): Promise<TestResult> {
@@ -281,12 +287,12 @@ export async function parseFile(filename: string): Promise<TestResult> {
     if (data.match(/^TAP version 13\r?\n/) ||
         data.match(/^ok /) ||
         data.match(/^not ok /)) {
-        return parseTap(data)
+        return await parseTap(data)
     }
 
     if (data.match(/^\s*<\?xml[^>]+>\s*<testsuites[^>]*>/) ||
         data.match(/^\s*<testsuites[^>]*>/)) {
-        return parseXml(data)
+        return await parseXml(data)
     }
 
     throw new Error(`unknown test file type for '${filename}'`)

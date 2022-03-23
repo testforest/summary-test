@@ -275,6 +275,7 @@ function parseTap(data) {
         const lines = data.trim().split(/\r?\n/);
         let version = 12;
         let header = 0;
+        let trailer = false;
         if (lines.length > 0 && lines[header].match(/^TAP version 13$/)) {
             version = 13;
             header++;
@@ -356,8 +357,9 @@ function parseTap(data) {
             else if (line.match(/^$/)) {
                 continue;
             }
-            else if (line.match(/^1\.\.\d+/) && i === lines.length - 1) {
+            else if (line.match(/^1\.\.\d+/)) {
                 // TODO: capture the plan for validation
+                trailer = true;
                 continue;
             }
             else {
@@ -371,7 +373,7 @@ function parseTap(data) {
             }
             if ((i + 1) < lines.length && lines[i + 1].match(/^  ---$/)) {
                 i++;
-                while (i < lines.length && !lines[i + 1].match(/^  ...$/)) {
+                while (i < lines.length && !lines[i + 1].match(/^  \.\.\.$/)) {
                     const detail = (lines[i + 1].match(/^  (.*)/));
                     if (!detail) {
                         throw new Error("invalid yaml in test case details");
@@ -386,6 +388,9 @@ function parseTap(data) {
                     throw new Error("truncated yaml in test case details");
                 }
                 i++;
+            }
+            if (trailer) {
+                throw new Error("unexpected test results after trailer");
             }
             cases.push({
                 status: status,
@@ -471,14 +476,14 @@ exports.parseXml = parseXml;
 function parseTapFile(filename) {
     return __awaiter(this, void 0, void 0, function* () {
         const readfile = util.promisify(fs.readFile);
-        return parseTap(yield readfile(filename, "utf8"));
+        return yield parseTap(yield readfile(filename, "utf8"));
     });
 }
 exports.parseTapFile = parseTapFile;
 function parseXmlFile(filename) {
     return __awaiter(this, void 0, void 0, function* () {
         const readfile = util.promisify(fs.readFile);
-        return parseXml(yield readfile(filename, "utf8"));
+        return yield parseXml(yield readfile(filename, "utf8"));
     });
 }
 exports.parseXmlFile = parseXmlFile;
@@ -489,11 +494,11 @@ function parseFile(filename) {
         if (data.match(/^TAP version 13\r?\n/) ||
             data.match(/^ok /) ||
             data.match(/^not ok /)) {
-            return parseTap(data);
+            return yield parseTap(data);
         }
         if (data.match(/^\s*<\?xml[^>]+>\s*<testsuites[^>]*>/) ||
             data.match(/^\s*<testsuites[^>]*>/)) {
-            return parseXml(data);
+            return yield parseXml(data);
         }
         throw new Error(`unknown test file type for '${filename}'`);
     });

@@ -33,15 +33,15 @@ describe("xml", async () => {
 
         expect(result.suites[0].cases.length).to.eql(6)
         expect(result.suites[0].cases[0].status).to.eql(TestStatus.Pass)
-        expect(result.suites[0].cases[0].name).to.eql("rejects missing operation")
+        expect(result.suites[0].cases[0].name).to.eql("Arithmetic Validation rejects missing operation")
         expect(result.suites[0].cases[0].duration).to.eql("0.021")
-        expect(result.suites[0].cases[0].description).to.eql("Arithmetic Validation rejects missing operation")
+        expect(result.suites[0].cases[0].description).to.eql("rejects missing operation")
 
         // ...
 
-        expect(result.suites[0].cases[5].name).to.eql("rejects operands with invalid decimals")
+        expect(result.suites[0].cases[5].name).to.eql("Arithmetic Validation rejects operands with invalid decimals")
         expect(result.suites[0].cases[5].duration).to.eql("0.002")
-        expect(result.suites[0].cases[5].description).to.eql("Arithmetic Validation rejects operands with invalid decimals")
+        expect(result.suites[0].cases[5].description).to.eql("rejects operands with invalid decimals")
 
         expect(result.suites[1].name).to.eql("Addition")
         expect(result.suites[1].timestamp).to.eql('2022-03-07T01:42:21')
@@ -61,9 +61,30 @@ describe("xml", async () => {
 
         expect(result.suites[4].cases.length).to.eql(7)
         expect(result.suites[4].cases[0].status).to.eql(TestStatus.Fail)
-        expect(result.suites[4].cases[0].name).to.eql("divides a positive integer by an integer factor ")
+        expect(result.suites[4].cases[0].name).to.eql("Arithmetic Division divides a positive integer by an integer factor ")
         expect(result.suites[4].cases[0].duration).to.eql("10")
-        expect(result.suites[4].cases[0].description).to.eql("Arithmetic Division divides a positive integer by an integer factor ")
+        expect(result.suites[4].cases[0].description).to.eql("divides a positive integer by an integer factor ")
         expect(result.suites[4].cases[0].details!.substring(0, 35)).to.eql("Error: Timeout of 10000ms exceeded.")
+    })
+
+    it("parses junit", async () => {
+        const result = await parseXmlFile(`${resourcePath}/03-junit.xml`)
+
+        expect(result.counts.passed).to.eql(4)
+        expect(result.counts.failed).to.eql(4)
+        expect(result.counts.skipped).to.eql(2)
+
+        expect(result.suites.length).to.eql(1)
+
+        expect(result.suites[0].cases[0].name).to.eql("passesTestOne")
+        expect(result.suites[0].cases[1].name).to.eql("passesTestTwo")
+        expect(result.suites[0].cases[2].name).to.eql("passesTestThree")
+        expect(result.suites[0].cases[3].name).to.eql("passesTestFour")
+        expect(result.suites[0].cases[4].name).to.eql("failsTestFive")
+        expect(result.suites[0].cases[5].name).to.eql("failsTestSix")
+        expect(result.suites[0].cases[6].name).to.eql("failsTestSeven")
+        expect(result.suites[0].cases[7].name).to.eql("failsTestEight")
+        expect(result.suites[0].cases[8].name).to.eql("skipsTestNine")
+        expect(result.suites[0].cases[9].name).to.eql("skipsTestTen")
     })
 })

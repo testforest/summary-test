@@ -201,12 +201,17 @@ export async function parseTap(data: string): Promise<TestResult> {
 export async function parseXml(data: string): Promise<TestResult> {
     const parser = util.promisify(xml2js.parseString)
     const xml: any = await parser(data)
+    let testsuites
 
-    if (!xml.testsuites) {
-        throw new Error("expected top-level testsuites node")
+    if (xml.testsuites) {
+        testsuites = xml.testsuites.testsuite
+    } else if (xml.testsuite) {
+        testsuites = [ xml.testsuite ]
+    } else {
+        throw new Error("expected top-level testsuites or testsuite node")
     }
 
-    if (!Array.isArray(xml.testsuites.testsuite)) {
+    if (!Array.isArray(testsuites)) {
         throw new Error("expected array of testsuites")
     }
 
@@ -217,7 +222,7 @@ export async function parseXml(data: string): Promise<TestResult> {
         skipped: 0
     }
 
-    for (const testsuite of xml.testsuites.testsuite) {
+    for (const testsuite of testsuites) {
         const cases = [ ]
 
         if (!Array.isArray(testsuite.testcase)) {
@@ -249,8 +254,8 @@ export async function parseXml(data: string): Promise<TestResult> {
             
             cases.push({
                 status: status,
-                name: classname || name,
-                description: classname ? name : undefined,
+                name: name,
+                description: classname,
                 details: details,
                 duration: duration
             })

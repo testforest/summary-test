@@ -415,10 +415,17 @@ function parseXml(data) {
     return __awaiter(this, void 0, void 0, function* () {
         const parser = util.promisify(xml2js_1.default.parseString);
         const xml = yield parser(data);
-        if (!xml.testsuites) {
-            throw new Error("expected top-level testsuites node");
+        let testsuites;
+        if (xml.testsuites) {
+            testsuites = xml.testsuites.testsuite;
         }
-        if (!Array.isArray(xml.testsuites.testsuite)) {
+        else if (xml.testsuite) {
+            testsuites = [xml.testsuite];
+        }
+        else {
+            throw new Error("expected top-level testsuites or testsuite node");
+        }
+        if (!Array.isArray(testsuites)) {
             throw new Error("expected array of testsuites");
         }
         const suites = [];
@@ -427,7 +434,7 @@ function parseXml(data) {
             failed: 0,
             skipped: 0
         };
-        for (const testsuite of xml.testsuites.testsuite) {
+        for (const testsuite of testsuites) {
             const cases = [];
             if (!Array.isArray(testsuite.testcase)) {
                 continue;
@@ -453,8 +460,8 @@ function parseXml(data) {
                 }
                 cases.push({
                     status: status,
-                    name: classname || name,
-                    description: classname ? name : undefined,
+                    name: name,
+                    description: classname,
                     details: details,
                     duration: duration
                 });

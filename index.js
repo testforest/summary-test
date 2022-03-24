@@ -260,7 +260,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parseFile = exports.parseXmlFile = exports.parseTapFile = exports.parseXml = exports.parseTap = exports.TestStatus = void 0;
+exports.parseFile = exports.parseJunitFile = exports.parseTapFile = exports.parseJunit = exports.parseTap = exports.TestStatus = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
 const util = __importStar(__nccwpck_require__(3837));
 const xml2js_1 = __importDefault(__nccwpck_require__(6189));
@@ -411,10 +411,8 @@ function parseTap(data) {
     });
 }
 exports.parseTap = parseTap;
-function parseXml(data) {
+function parseJunitXml(xml) {
     return __awaiter(this, void 0, void 0, function* () {
-        const parser = util.promisify(xml2js_1.default.parseString);
-        const xml = yield parser(data);
         let testsuites;
         if (xml.testsuites) {
             testsuites = xml.testsuites.testsuite;
@@ -479,7 +477,14 @@ function parseXml(data) {
         };
     });
 }
-exports.parseXml = parseXml;
+function parseJunit(data) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const parser = util.promisify(xml2js_1.default.parseString);
+        const xml = yield parser(data);
+        return yield parseJunitXml(xml);
+    });
+}
+exports.parseJunit = parseJunit;
 function parseTapFile(filename) {
     return __awaiter(this, void 0, void 0, function* () {
         const readfile = util.promisify(fs.readFile);
@@ -487,25 +492,26 @@ function parseTapFile(filename) {
     });
 }
 exports.parseTapFile = parseTapFile;
-function parseXmlFile(filename) {
+function parseJunitFile(filename) {
     return __awaiter(this, void 0, void 0, function* () {
         const readfile = util.promisify(fs.readFile);
-        return yield parseXml(yield readfile(filename, "utf8"));
+        return yield parseJunit(yield readfile(filename, "utf8"));
     });
 }
-exports.parseXmlFile = parseXmlFile;
+exports.parseJunitFile = parseJunitFile;
 function parseFile(filename) {
     return __awaiter(this, void 0, void 0, function* () {
         const readfile = util.promisify(fs.readFile);
+        const parser = util.promisify(xml2js_1.default.parseString);
         const data = yield readfile(filename, "utf8");
         if (data.match(/^TAP version 13\r?\n/) ||
             data.match(/^ok /) ||
             data.match(/^not ok /)) {
             return yield parseTap(data);
         }
-        if (data.match(/^\s*<\?xml[^>]+>\s*<testsuites[^>]*>/) ||
-            data.match(/^\s*<testsuites[^>]*>/)) {
-            return yield parseXml(data);
+        const xml = yield parser(data);
+        if (xml.testsuites || xml.testsuite) {
+            return yield parseJunitXml(xml);
         }
         throw new Error(`unknown test file type for '${filename}'`);
     });

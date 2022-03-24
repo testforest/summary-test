@@ -198,9 +198,7 @@ export async function parseTap(data: string): Promise<TestResult> {
     }
 }
 
-export async function parseXml(data: string): Promise<TestResult> {
-    const parser = util.promisify(xml2js.parseString)
-    const xml: any = await parser(data)
+async function parseJunitXml(xml: any): Promise<TestResult> {
     let testsuites
 
     if (xml.testsuites) {
@@ -275,18 +273,27 @@ export async function parseXml(data: string): Promise<TestResult> {
     }
 }
 
+export async function parseJunit(data: string): Promise<TestResult> {
+    const parser = util.promisify(xml2js.parseString)
+    const xml: any = await parser(data)
+
+    return await parseJunitXml(xml)
+}
+
 export async function parseTapFile(filename: string): Promise<TestResult> {
     const readfile = util.promisify(fs.readFile)
     return await parseTap(await readfile(filename, "utf8"))
 }
 
-export async function parseXmlFile(filename: string): Promise<TestResult> {
+export async function parseJunitFile(filename: string): Promise<TestResult> {
     const readfile = util.promisify(fs.readFile)
-    return await parseXml(await readfile(filename, "utf8"))
+    return await parseJunit(await readfile(filename, "utf8"))
 }
 
 export async function parseFile(filename: string): Promise<TestResult> {
     const readfile = util.promisify(fs.readFile)
+    const parser = util.promisify(xml2js.parseString)
+
     const data = await readfile(filename, "utf8")
 
     if (data.match(/^TAP version 13\r?\n/) ||
@@ -295,9 +302,10 @@ export async function parseFile(filename: string): Promise<TestResult> {
         return await parseTap(data)
     }
 
-    if (data.match(/^\s*<\?xml[^>]+>\s*<testsuites[^>]*>/) ||
-        data.match(/^\s*<testsuites[^>]*>/)) {
-        return await parseXml(data)
+    const xml: any = await parser(data)
+
+    if (xml.testsuites || xml.testsuite) {
+        return await parseJunitXml(xml)
     }
 
     throw new Error(`unknown test file type for '${filename}'`)

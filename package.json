@@ -10,11 +10,12 @@
     "lint": "eslint src/**/*.ts",
     "pack": "ncc build",
     "test": "mocha -r ts-node/register --reporter mocha-multi-reporters --reporter-options configFile=test/config.json test/**/*.ts",
+    "clean": "rm -rf bin dist",
     "all": "npm run build && npm run lint && npm run pack && npm test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/testforest/test-summary.git"
+    "url": "git+https://github.com/test-summary/action.git"
   },
   "keywords": [
     "actions",

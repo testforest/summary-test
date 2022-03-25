@@ -5,13 +5,13 @@ import * as glob from "glob-promise"
 
 import { TestResult, TestStatus, parseFile } from "./test_parser"
 
-const dashboardUrl = 'http://svg.testforest.io/dashboard.svg'
-const passIconUrl = 'http://svg.testforest.io/icon/pass.svg?s=12'
-const failIconUrl = 'http://svg.testforest.io/icon/fail.svg?s=12'
-const skipIconUrl = 'http://svg.testforest.io/icon/skip.svg?s=12'
-const noneIconUrl = 'http://svg.testforest.io/icon/none.svg?s=12'
+const dashboardUrl = 'http://svg.test-summary.com/dashboard.svg'
+const passIconUrl = 'http://svg.test-summary.com/icon/pass.svg?s=12'
+const failIconUrl = 'http://svg.test-summary.com/icon/fail.svg?s=12'
+const skipIconUrl = 'http://svg.test-summary.com/icon/skip.svg?s=12'
+const noneIconUrl = 'http://svg.test-summary.com/icon/none.svg?s=12'
 
-const footer = `This test report was produced by <a href="https://github.com/testforest/action">TestForest Dashboard</a>.&nbsp; Made with ❤️ in Cambridge by TestForest.`
+const footer = `This test report was produced by the <a href="https://github.com/test-summary/action">test-summary action</a>.&nbsp; Made with ❤️ in Cambridge.`
 
 async function run(): Promise<void> {
   try {
